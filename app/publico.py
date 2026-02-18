@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+import os
 from datetime import date
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
-from .db import get_db
 from .asaas_service import create_or_get_customer, create_pix_payment, get_pix_qrcode
-import os
+from .db import get_db
 from .utils import vencimento_do_pedido
 
 bp = Blueprint("publico", __name__)
@@ -96,6 +96,7 @@ def loja():
 
         hoje = date.today().isoformat()
 
+        # cria o pedido
         cur.execute(
             """
             INSERT INTO pedidos (
@@ -111,65 +112,77 @@ def loja():
             """,
             (uid, cliente_id, produto_id_int, qtd_int, hoje, vencimento, hora_vencimento),
         )
+        pedido_id = cur.lastrowid
         con.commit()
+
+        # Cria cobrança PIX no Asaas (se configurado)
+        if os.getenv("ASAAS_API_KEY"):
+            cur.execute(
+                "SELECT nome, preco FROM produtos WHERE id = ? AND usuario_id = ?",
+                (produto_id_int, uid),
+            )
+            pr = cur.fetchone()
+            if pr:
+                descricao = f"Pedido #{pedido_id} - {pr['nome']} x{qtd_int}"
+                valor = float(pr["preco"]) * int(qtd_int)
+
+                try:
+                    customer_id = create_or_get_customer(
+                        nome, telefone, external_reference=str(cliente_id)
+                    )
+                    pay = create_pix_payment(
+                        customer_id=customer_id,
+                        value=valor,
+                        due_date_iso=vencimento,
+                        description=descricao,
+                        external_reference=str(pedido_id),
+                    )
+                    pay_id = pay.get("id")
+                    invoice_url = pay.get("invoiceUrl")
+
+                    pix_payload = None
+                    pix_qr = None
+                    if pay_id:
+                        qr = get_pix_qrcode(pay_id)
+                        pix_payload = (
+                            qr.get("payload")
+                            or qr.get("brCode")
+                            or qr.get("copyPaste")
+                            or qr.get("encodedText")
+                        )
+                        pix_qr = qr.get("encodedImage")
+
+                    cur.execute(
+                        """
+                        UPDATE pedidos
+                        SET asaas_customer_id = ?,
+                            asaas_payment_id = ?,
+                            asaas_invoice_url = ?,
+                            pix_payload = ?,
+                            pix_qr_code = ?,
+                            asaas_status = ?
+                        WHERE id = ?
+                        """,
+                        (
+                            customer_id,
+                            pay_id,
+                            invoice_url,
+                            pix_payload,
+                            pix_qr,
+                            "PAYMENT_CREATED",
+                            pedido_id,
+                        ),
+                    )
+                    con.commit()
+
+                except Exception:
+                    # não quebra a loja se Asaas falhar; pedido continua criado
+                    pass
 
         return redirect(url_for("publico.sucesso"))
 
-    
-
-pedido_id = cur.lastrowid
-
-# Cria cobrança PIX no Asaas (se configurado)
-if os.getenv("ASAAS_API_KEY"):
-    cur.execute(
-        "SELECT nome, preco FROM produtos WHERE id = ? AND usuario_id = ?",
-        (produto_id_int, uid),
-    )
-    pr = cur.fetchone()
-    if pr:
-        descricao = f"Pedido #{pedido_id} - {pr['nome']} x{qtd_int}"
-        valor = float(pr["preco"]) * int(qtd_int)
-        try:
-            customer_id = create_or_get_customer(nome, telefone, external_reference=str(cliente_id))
-            pay = create_pix_payment(
-                customer_id=customer_id,
-                value=valor,
-                due_date_iso=vencimento,
-                description=descricao,
-                external_reference=str(pedido_id),
-            )
-            pay_id = pay.get("id")
-            invoice_url = pay.get("invoiceUrl")
-
-            pix_payload = None
-            pix_qr = None
-            if pay_id:
-                qr = get_pix_qrcode(pay_id)
-                pix_payload = (
-                    qr.get("payload")
-                    or qr.get("brCode")
-                    or qr.get("copyPaste")
-                    or qr.get("encodedText")
-                )
-                pix_qr = qr.get("encodedImage")
-
-            cur.execute(
-                """
-                UPDATE pedidos
-                SET asaas_customer_id = ?,
-                    asaas_payment_id = ?,
-                    asaas_invoice_url = ?,
-                    pix_payload = ?,
-                    pix_qr_code = ?,
-                    asaas_status = ?
-                WHERE id = ?
-                """,
-                (customer_id, pay_id, invoice_url, pix_payload, pix_qr, "PAYMENT_CREATED", pedido_id),
-            )
-        except Exception:
-            pass
-venc_padrao = vencimento_do_pedido(date.today()).isoformat()
-
+    # GET: mostra loja com vencimento padrão
+    venc_padrao = vencimento_do_pedido(date.today()).isoformat()
     return render_template(
         "loja.html",
         produtos=produtos,

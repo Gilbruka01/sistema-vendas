@@ -7,7 +7,6 @@ Como funciona:
 
 IMPORTANTE:
 - Isso só roda se o sistema estiver EXECUTANDO num servidor ligado 24/7.
-  Se você fechar o programa, ele não consegue enviar mensagens.
 """
 
 from __future__ import annotations
@@ -42,7 +41,9 @@ def _parse_data_hora(data_iso: str | None, hora_hhmm: str | None) -> datetime | 
         return None
 
 
-def _calcular_total(preco: float, qtd: int, venc_dt: datetime, agora: datetime) -> tuple[float, float, int]:
+def _calcular_total(
+    preco: float, qtd: int, venc_dt: datetime, agora: datetime
+) -> tuple[float, float, int]:
     principal = float(preco) * int(qtd)
     dias_atraso = max((agora.date() - venc_dt.date()).days, 0)
     juros = principal * TAXA_JUROS_DIA * dias_atraso if dias_atraso > 0 else 0.0
@@ -55,15 +56,12 @@ def _job_enviar_cobrancas(app: Flask) -> None:
         con = get_db()
         cur = con.cursor()
 
-        # Seleciona pedidos em aberto e ainda não enviados
         cur.execute(
             """
             SELECT
                 p.id              AS pedido_id,
-                p.usuario_id      AS usuario_id,
                 p.vencimento      AS vencimento,
                 p.hora_vencimento AS hora_vencimento,
-                p.data            AS data_pedido,
                 p.quantidade      AS quantidade,
                 p.whatsapp_enviado AS whatsapp_enviado,
                 p.asaas_invoice_url AS asaas_invoice_url,
@@ -75,9 +73,11 @@ def _job_enviar_cobrancas(app: Flask) -> None:
             FROM pedidos p
             JOIN clientes c ON c.id = p.cliente_id
             JOIN produtos pr ON pr.id = p.produto_id
-            WHERE p.pago = 0 AND (p.whatsapp_enviado IS NULL OR p.whatsapp_enviado = 0)
+            WHERE p.pago = 0
+              AND (p.whatsapp_enviado IS NULL OR p.whatsapp_enviado = 0)
             """
         )
+
         rows = cur.fetchall()
         agora = _agora_local()
 
@@ -86,7 +86,6 @@ def _job_enviar_cobrancas(app: Flask) -> None:
             if venc_dt is None:
                 continue
 
-            # Só dispara quando chegou a data+hora
             if agora < venc_dt:
                 continue
 
@@ -111,16 +110,21 @@ def _job_enviar_cobrancas(app: Flask) -> None:
                 f"Pedido #{pedido_id}: {produto} x{int(r['quantidade'])}\n"
                 f"Total atualizado: R$ {total:.2f}\n"
             )
-            if dias > 0:
-                msg += f"Inclui juros de R$ {juros:.2f} (3% ao dia, {dias} dia(s) de atraso).\n"
-            
-# Se houver PIX, inclui link e código copia-e-cola
-if r.get("asaas_invoice_url"):
-    msg += f"\nLink do pagamento (Pix): {r['asaas_invoice_url']}\n"
-if r.get("pix_payload"):
-    msg += f"\nPix Copia e Cola:\n{r['pix_payload']}\n"
 
-msg += "\nResponda aqui confirmando o pagamento 🙂"
+            if dias > 0:
+                msg += (
+                    f"Inclui juros de R$ {juros:.2f} "
+                    f"(3% ao dia, {dias} dia(s) de atraso).\n"
+                )
+
+            # Se houver PIX, inclui link e código copia-e-cola
+            if r["asaas_invoice_url"]:
+                msg += f"\nLink do pagamento (Pix): {r['asaas_invoice_url']}\n"
+
+            if r["pix_payload"]:
+                msg += f"\nPix Copia e Cola:\n{r['pix_payload']}\n"
+
+            msg += "\nResponda aqui confirmando o pagamento 🙂"
 
             ok = enviar_whatsapp(telefone, msg)
 
@@ -138,13 +142,18 @@ msg += "\nResponda aqui confirmando o pagamento 🙂"
 
 
 def start_scheduler(app: Flask) -> None:
-    """Inicia o scheduler em background, se habilitado por env var."""
+    """Inicia o scheduler em background, se habilitado."""
     if os.getenv("WHATSAPP_AUTOMATICO", "0") != "1":
         return
 
     sched = BackgroundScheduler(daemon=True)
-    sched.add_job(lambda: _job_enviar_cobrancas(app), "interval", minutes=1, id="cobrancas_whatsapp")
+    sched.add_job(
+        lambda: _job_enviar_cobrancas(app),
+        "interval",
+        minutes=1,
+        id="cobrancas_whatsapp",
+    )
     sched.start()
 
-    # guarda referência para evitar GC
+    # evita que o scheduler seja coletado pelo GC
     app.extensions["apscheduler"] = sched
