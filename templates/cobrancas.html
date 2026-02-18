@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<div class="card">
+  <h1>Cobranças</h1>
+  <p style="color: var(--muted); margin-top:6px;">
+    Aqui aparecem os pedidos em aberto. O total é recalculado automaticamente (juros: {{ (taxa_juros_dia*100)|round(0) }}% ao dia).
+  </p>
+</div>
+
+{% if clientes|length == 0 %}
+  <div class="card">
+    <h3>Nenhuma cobrança no momento</h3>
+    <p style="color: var(--muted);">
+      Não há pedidos em aberto.
+    </p>
+    <a class="link" href="/listar_pedidos">Ver pedidos</a>
+  </div>
+{% endif %}
+
+{% for c in clientes %}
+  <div class="card">
+    <div style="display:flex; gap:14px; flex-wrap:wrap; align-items:center;">
+      <div>
+        <h3 style="margin:0;">{{ c.nome }}</h3>
+        <div style="color: var(--muted); font-weight:700; margin-top:6px;">Total atualizado</div>
+        <div class="value danger" style="font-size:22px;">R$ {{ "%.2f"|format(c.total) }}</div>
+        <div style="color: var(--muted); margin-top:6px;">
+          Subtotal: R$ {{ "%.2f"|format(c.principal) }} • Juros: R$ {{ "%.2f"|format(c.juros) }}
+        </div>
+      </div>
+
+      <div style="margin-left:auto; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        {% if c.link_whatsapp %}
+          <a class="btn" href="{{ c.link_whatsapp }}" target="_blank">Enviar WhatsApp</a>
+        {% else %}
+          <span style="color: var(--muted); font-weight:700;">Sem telefone</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="margin-top:14px; overflow:auto;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Qtd</th>
+            <th>Vencimento</th>
+            <th>Hora</th>
+            <th>Editar</th>
+            <th>Atraso</th>
+            <th>Principal</th>
+            <th>Juros</th>
+            <th>Total</th>
+            <th style="width:160px;">Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in c.pedidos %}
+            <tr>
+              <td>{{ p.produto }}</td>
+              <td>{{ p.qtd }}</td>
+              <td>{{ p.vencimento }}</td>
+              <td>{{ p.hora_vencimento }}</td>
+              <td>
+                <form action="/cobrancas/editar/{{ p.pedido_id }}" method="post" style="display:flex; gap:6px; align-items:center; margin:0;">
+                  <input type="date" name="vencimento" value="{{ p.vencimento }}" style="min-width:140px;" required>
+                  <input type="time" name="hora_vencimento" value="{{ p.hora_vencimento }}" style="min-width:110px;" required>
+                  <button class="btn" type="submit" title="Salvar">Salvar</button>
+                </form>
+              </td>
+              <td>{{ p.dias }} dia(s)</td>
+              <td>R$ {{ "%.2f"|format(p.principal) }}</td>
+              <td>R$ {{ "%.2f"|format(p.juros) }}</td>
+              <td><strong>R$ {{ "%.2f"|format(p.total) }}</strong></td>
+              <td>
+                <form action="/cobrancas/pagar/{{ p.pedido_id }}" method="post" style="margin:0;">
+                  <button class="btn success" type="submit">Dar baixa</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <p style="color: var(--muted); margin-top:10px;">
+      <strong>Dar baixa</strong> marca o pedido como pago e ele sai desta lista.
+    </p>
+  </div>
+{% endfor %}
+
+{% endblock %}

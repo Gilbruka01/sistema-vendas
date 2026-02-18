@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<div class="card" style="max-width:520px; margin:0 auto;">
+  <h1>Login</h1>
+  <p>Entre para acessar seus dados.</p>
+
+  <form method="POST" action="{{ url_for('auth.login') }}" style="display:grid; gap:12px; margin-top:12px;">
+    <div>
+      <label>Usuário</label>
+      <input name="username" required autocomplete="username" placeholder="Seu usuário">
+    </div>
+
+    <div>
+      <label>Senha</label>
+      <input type="password" name="senha" required autocomplete="current-password" placeholder="Sua senha">
+    </div>
+
+    <button class="btn" type="submit">Entrar</button>
+    <a class="link" href="{{ url_for('auth.register') }}">Criar conta</a>
+  </form>
+</div>
+
+{% endblock %}

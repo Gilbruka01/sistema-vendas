@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-start;">
+    <div>
+      <h1>Pedidos</h1>
+      <p style="color: var(--muted); margin-top:6px;">
+        Visualize, filtre e marque pedidos como pagos.
+      </p>
+    </div>
+
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <a class="btn" href="{{ url_for('pedidos.pedidos') }}" style="text-decoration:none;">+ Novo pedido</a>
+    </div>
+  </div>
+</div>
+
+{# Totais #}
+{% set total_geral = 0 %}
+{% set total_aberto = 0 %}
+{% set total_pago = 0 %}
+
+{% for p in pedidos %}
+  {% set total_geral = total_geral + (p[6] or 0) %}
+  {% if p[7] == 1 %}
+    {% set total_pago = total_pago + (p[6] or 0) %}
+  {% else %}
+    {% set total_aberto = total_aberto + (p[6] or 0) %}
+  {% endif %}
+{% endfor %}
+
+<div class="kpi-grid">
+  <div class="card kpi">
+    <div class="label">Total (lista atual)</div>
+    <div class="value">R$ {{ "%.2f"|format(total_geral) }}</div>
+  </div>
+
+  <div class="card kpi" style="border:1px solid rgba(245,158,11,.25);">
+    <div class="label">Em aberto</div>
+    <div class="value">R$ {{ "%.2f"|format(total_aberto) }}</div>
+  </div>
+
+  <div class="card kpi" style="border:1px solid rgba(34,197,94,.25);">
+    <div class="label">Pagos</div>
+    <div class="value">R$ {{ "%.2f"|format(total_pago) }}</div>
+  </div>
+</div>
+
+{# Filtros #}
+{% set st = status or "todos" %}
+
+<div class="card">
+  <div class="tabs" style="justify-content:space-between; width:100%;">
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <a href="{{ url_for('pedidos.listar_pedidos') }}?status=todos" class="tab {% if st=='todos' %}active{% endif %}">Todos</a>
+      <a href="{{ url_for('pedidos.listar_pedidos') }}?status=aberto" class="tab {% if st=='aberto' %}active{% endif %}">Em aberto</a>
+      <a href="{{ url_for('pedidos.listar_pedidos') }}?status=pago" class="tab {% if st=='pago' %}active{% endif %}">Pagos</a>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <input
+        id="pedidoSearch"
+        type="search"
+        placeholder="Buscar (cliente, produto, data, #id...)"
+        autocomplete="off"
+        style="min-width:280px; width:320px; max-width:100%;
+               padding:10px 12px; border-radius:999px; border:1px solid var(--border);
+               background: rgba(255,255,255,.03); color: var(--text);"
+      >
+
+      <span id="pedidoCount" style="color:var(--muted); font-weight:800;">
+        {{ pedidos|length }} pedido(s)
+      </span>
+    </div>
+
+  </div>
+</div>
+
+{# Tabela #}
+<div class="card" style="padding:0;">
+  <div class="table-wrap">
+    <table class="table">
+      <tr>
+        <th>#</th>
+        <th>Data</th>
+        <th>Cliente</th>
+        <th>Produto</th>
+        <th>Qtd</th>
+        <th>Total</th>
+        <th>Status</th>
+        <th style="width:200px;">Ações</th>
+      </tr>
+
+      {% if pedidos|length == 0 %}
+        <tr>
+          <td colspan="8" style="padding:18px;">
+            <div style="color:var(--muted); font-weight:800;">
+              Nenhum pedido encontrado com este filtro.
+            </div>
+          </td>
+        </tr>
+      {% endif %}
+
+      {% for p in pedidos %}
+      <tr class="pedido-row"
+          data-search="{{ p[0] }} {{ p[1] }} {{ p[2] }} {{ p[3] }} {{ p[5] }} {{ 'pago' if p[7]==1 else 'aberto' }}">
+
+        <td><strong>{{ p[0] }}</strong></td>
+        <td>{{ p[1] }}</td>
+        <td>{{ p[2] }}</td>
+        <td>{{ p[3] }}</td>
+        <td>{{ p[5] }}</td>
+        <td><strong>R$ {{ "%.2f"|format(p[6]) }}</strong></td>
+
+        <td>
+          {% if p[7] == 1 %}
+            <span class="badge success">Pago</span>
+          {% else %}
+            <span class="badge warn">Em aberto</span>
+          {% endif %}
+        </td>
+
+        <td>
+          {% if p[7] == 0 %}
+            <form method="POST" action="{{ url_for('pedidos.marcar_pago', pedido_id=p[0]) }}" style="display:inline;">
+              <button class="btn-sm primary" type="submit"
+                      onclick="return confirm('Marcar este pedido como pago?');">
+                Marcar pago
+              </button>
+            </form>
+          {% else %}
+            <span style="color:var(--muted); font-weight:800;">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+

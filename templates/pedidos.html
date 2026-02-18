@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<div class="card">
+  <h1>Novo Pedido</h1>
+  <p>Selecione cliente, produto e quantidade.</p>
+</div>
+
+{% if not clientes %}
+  <div class="card" style="max-width:700px;">
+    <h3>Você ainda não cadastrou clientes</h3>
+    <p>Para criar um pedido, primeiro cadastre pelo menos 1 cliente.</p>
+    <a class="btn" href="/clientes" style="text-decoration:none;">Ir para Clientes</a>
+  </div>
+
+{% elif not produtos %}
+  <div class="card" style="max-width:700px;">
+    <h3>Você ainda não cadastrou produtos</h3>
+    <p>Para criar um pedido, primeiro cadastre pelo menos 1 produto.</p>
+    <a class="btn" href="/produtos" style="text-decoration:none;">Ir para Produtos</a>
+  </div>
+
+{% else %}
+
+<div class="card">
+  <form method="POST" style="display:grid; gap:12px; max-width:700px;">
+
+    <div>
+      <label>Cliente</label>
+      <select name="cliente_id" required>
+        <option value="" selected disabled>Selecione um cliente…</option>
+        {% for c in clientes %}
+          <option value="{{ c[0] }}">{{ c[1] }} ({{ c[2] }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label>Produto</label>
+      <select name="produto_id" required>
+        <option value="" selected disabled>Selecione um produto…</option>
+        {% for p in produtos %}
+          <option value="{{ p[0] }}">{{ p[1] }} - R$ {{ "%.2f"|format(p[2]) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label>Quantidade</label>
+      <input type="number" name="quantidade" required min="1" step="1" value="1" inputmode="numeric">
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <button class="btn" type="submit">Criar pedido</button>
+      <a class="link" href="/listar_pedidos">Ver pedidos</a>
+    </div>
+
+  </form>
+</div>
+
+{% endif %}
+
+{% endblock %}
+

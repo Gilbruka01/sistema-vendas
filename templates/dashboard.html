@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block conteudo %}
+
+<!-- Cabeçalho -->
+<div class="card">
+  <div class="dash-header">
+    <div>
+      <h1>Dashboard</h1>
+      <p>Visão geral do seu fiado e movimentação.</p>
+    </div>
+
+    <div class="dash-actions">
+      <a class="btn primary" href="/pedidos" style="text-decoration:none;">+ Novo pedido</a>
+      <a class="btn" href="/cobrancas" style="text-decoration:none;">Cobranças</a>
+      <a class="btn" href="/estoque" style="text-decoration:none;">Estoque</a>
+    </div>
+  </div>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-grid">
+  <div class="card kpi" style="border:1px solid rgba(245,158,11,.25);">
+    <div class="label">Total em aberto</div>
+    <div class="value">R$ {{ "%.2f"|format(total_aberto or 0) }}</div>
+    <div class="hint">Pedidos pendentes</div>
+  </div>
+
+  <div class="card kpi" style="border:1px solid rgba(34,197,94,.25);">
+    <div class="label">Total pago</div>
+    <div class="value">R$ {{ "%.2f"|format(total_pago or 0) }}</div>
+    <div class="hint">Pagamentos concluídos</div>
+  </div>
+
+  <div class="card kpi">
+    <div class="label">Clientes ativos</div>
+    <div class="value">{{ total_clientes or 0 }}</div>
+    <div class="hint">Base cadastrada</div>
+  </div>
+
+  <div class="card kpi">
+    <div class="label">Pedidos</div>
+    <div class="value">{{ total_pedidos or 0 }}</div>
+    <div class="hint">Total registrados</div>
+  </div>
+</div>
+
+<!-- Linha 1: Gráfico + Acesso rápido -->
+<div class="row">
+  <div class="card panel" style="flex:2; min-width:320px;">
+    <div class="panel-head">
+      <div class="panel-title">
+        <h3>Faturamento por mês</h3>
+        <p>Últimos 6 meses (somatório dos pedidos).</p>
+      </div>
+      <a class="btn" href="/listar_pedidos" style="text-decoration:none;">Ver pedidos</a>
+    </div>
+
+    <div class="chart-box">
+      <canvas id="salesChart"></canvas>
+    </div>
+
+    {% if not chart_labels %}
+      <div style="padding: 0 16px 16px 16px;">
+        <p style="color:var(--muted); font-weight:800;">
+          Ainda não há dados suficientes para o gráfico.
+        </p>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card panel" style="flex:1; min-width:260px;">
+    <div class="panel-head">
+      <div class="panel-title">
+        <h3>Acesso rápido</h3>
+        <p>Ações frequentes.</p>
+      </div>
+      <span></span>
+    </div>
+
+    <div style="padding:16px; display:flex; gap:10px; flex-wrap:wrap;">
+      <a class="btn" href="/clientes" style="text-decoration:none;">+ Cliente</a>
+      <a class="btn" href="/produtos" style="text-decoration:none;">+ Produto</a>
+      <a class="btn primary" href="/pedidos" style="text-decoration:none;">+ Pedido</a>
+      <a class="btn" href="/listar_pedidos" style="text-decoration:none;">Pedidos</a>
+      <a class="btn" href="/estoque" style="text-decoration:none;">Estoque</a>
+    </div>
+  </div>
+</div>
+
+<!-- Linha 2: Tabelas -->
+<div class="row">
+  <div class="card panel" style="flex:1; min-width:320px;">
+    <div class="panel-head">
+      <div class="panel-title">
+        <h3>Top 5 devedores</h3>
+        <p>Clientes com maior valor em aberto.</p>
+      </div>
+      <a class="btn" href="/cobrancas" style="text-decoration:none;">Gerenciar</a>
+    </div>
+
+    <div class="panel-body table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if not top_devedores %}
+            <tr>
+              <td colspan="2" style="padding:18px; color:var(--muted); font-weight:800;">
+                Nenhum devedor em aberto no momento.
+              </td>
+            </tr>
+          {% else %}
+            {% for nome, total in top_devedores %}
+              <tr>
+                <td>{{ nome }}</td>
+                <td><strong>R$ {{ "%.2f"|format(total or 0) }}</strong></td>
+              </tr>
+            {% endfor %}
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card panel" style="flex:1; min-width:320px;">
+    <div class="panel-head">
+      <div class="panel-title">
+        <h3>Top 5 produtos</h3>
+        <p>Mais vendidos por quantidade.</p>
+      </div>
+      <a class="btn" href="/produtos" style="text-decoration:none;">Ver produtos</a>
+    </div>
+
+    <div class="panel-body table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Qtd</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if not top_produtos %}
+            <tr>
+              <td colspan="2" style="padding:18px; color:var(--muted); font-weight:800;">
+                Ainda não há vendas registradas.
+              </td>
+            </tr>
+          {% else %}
+            {% for nome, qtd in top_produtos %}
+              <tr>
+                <td>{{ nome }}</td>
+                <td><strong>{{ qtd or 0 }}</strong></td>
+              </tr>
+            {% endfor %}
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock conteudo %}
+
+{% block scripts %}
+<script>
+  const labels = {{ (chart_labels or [])|tojson }};
+  const values = {{ (chart_values or [])|tojson }};
+
+  const canvas = document.getElementById('salesChart');
+
+  if (canvas && window.Chart && labels.length) {
+    const ctx = canvas.getContext('2d');
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'R$ por mês',
+          data: values,
+          tension: 0.35,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: true } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+  }
+</script>
+{% endblock scripts %}

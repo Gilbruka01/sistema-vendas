@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-start;">
+    <div>
+      <h1>Produtos</h1>
+      <p>Cadastre produtos e gerencie (editar/excluir).</p>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Form cadastro -->
+  <div class="card" style="flex:1; min-width:280px;">
+    <h3>Novo produto</h3>
+    <p>Informe nome e preço.</p>
+
+    <form method="POST" style="margin-top:12px;">
+      <div style="display:grid; gap:12px;">
+        <div>
+          <label>Nome</label>
+          <input name="nome" required placeholder="Ex: Coca-Cola 2L">
+        </div>
+
+        <div>
+          <label>Preço</label>
+          <input name="preco" required placeholder="Ex: 9.90">
+        </div>
+
+        <button class="btn primary" type="submit">Cadastrar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Lista -->
+  <div class="card panel" style="flex:2; min-width:320px; padding:0;">
+    <div class="panel-head">
+      <div class="panel-title">
+        <h3>Lista de produtos</h3>
+        <p>Total: {{ produtos|length }}</p>
+      </div>
+    </div>
+
+    <div class="panel-body table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width:70px;">ID</th>
+            <th>Nome</th>
+            <th style="width:140px;">Preço</th>
+            <th style="width:220px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if not produtos %}
+            <tr>
+              <td colspan="4" style="padding:18px; color:var(--muted); font-weight:800;">
+                Nenhum produto cadastrado ainda.
+              </td>
+            </tr>
+          {% else %}
+            {% for p in produtos %}
+              {# p = (id, nome, preco) #}
+              <tr>
+                <td><strong>#{{ p[0] }}</strong></td>
+                <td>{{ p[1] }}</td>
+                <td><strong>R$ {{ "%.2f"|format(p[2] or 0) }}</strong></td>
+                <td>
+                  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <a class="btn" href="/produtos/editar/{{ p[0] }}" style="text-decoration:none;">
+                      Editar
+                    </a>
+
+                    <form method="POST" action="/produtos/excluir/{{ p[0] }}" style="display:inline;">
+                      <button
+                        class="btn"
+                        type="submit"
+                        onclick="return confirm('Tem certeza que deseja excluir este produto?');"
+                      >
+                        Excluir
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

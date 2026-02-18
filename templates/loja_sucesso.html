@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="card">
+  <h1>Pedido enviado ✅</h1>
+  <p style="color: var(--muted); margin-top:6px;">
+    Recebemos seu pedido. Em breve entraremos em contato.
+  </p>
+  <a class="btn" href="{{ url_for('publico.loja') }}">Fazer outro pedido</a>
+</div>
+{% endblock %}

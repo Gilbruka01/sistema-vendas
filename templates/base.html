@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sistema de Vendas</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=3">
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+  <div class="layout">
+
+    {% if session.get("user_id") %}
+      <aside class="sidebar" id="sidebar">
+        <div class="brand">
+          <div class="brand-title">
+            <i data-lucide="briefcase" class="nav-ico"></i>
+            <span>Sistema</span>
+          </div>
+          <div class="brand-sub">Gestão • Cobranças • Estoque</div>
+        </div>
+
+        <nav class="nav">
+          <a href="{{ url_for('dashboard.home') }}"
+             class="nav-link {% if request.path == '/' %}active{% endif %}">
+            <i data-lucide="home" class="nav-ico"></i>
+            <span>Dashboard</span>
+          </a>
+
+          <a href="{{ url_for('clientes.clientes') }}"
+             class="nav-link {% if request.path.startswith('/clientes') %}active{% endif %}">
+            <i data-lucide="users" class="nav-ico"></i>
+            <span>Clientes</span>
+          </a>
+
+          <a href="{{ url_for('produtos.produtos') }}"
+             class="nav-link {% if request.path.startswith('/produtos') %}active{% endif %}">
+            <i data-lucide="box" class="nav-ico"></i>
+            <span>Produtos</span>
+          </a>
+
+          <a href="{{ url_for('estoque.estoque') }}"
+             class="nav-link {% if request.path.startswith('/estoque') %}active{% endif %}">
+            <i data-lucide="archive" class="nav-ico"></i>
+            <span>Estoque</span>
+          </a>
+
+          <a href="{{ url_for('pedidos.pedidos') }}"
+             class="nav-link {% if request.path.startswith('/pedidos') %}active{% endif %}">
+            <i data-lucide="file-plus" class="nav-ico"></i>
+            <span>Novo Pedido</span>
+          </a>
+
+          <a href="{{ url_for('pedidos.listar_pedidos') }}"
+             class="nav-link {% if request.path.startswith('/listar_pedidos') %}active{% endif %}">
+            <i data-lucide="file-text" class="nav-ico"></i>
+            <span>Pedidos</span>
+          </a>
+
+          <a href="{{ url_for('cobrancas.cobrancas') }}"
+             class="nav-link {% if request.path.startswith('/cobrancas') %}active{% endif %}">
+            <i data-lucide="message-circle" class="nav-ico"></i>
+            <span>Cobranças</span>
+          </a>
+
+<a href="{{ url_for('financeiro.financeiro') }}"
+   class="nav-link {% if request.path.startswith('/financeiro') %}active{% endif %}">
+  <i data-lucide="bar-chart-3" class="nav-ico"></i>
+  <span>Financeiro</span>
+</a>
+        </nav>
+      </aside>
+    {% endif %}
+
+    <main class="main">
+
+      <header class="topbar">
+        <div class="topbar-left">
+          {% if session.get("user_id") %}
+            <button class="icon-btn" id="menuBtn" type="button" title="Menu">
+              <i data-lucide="menu"></i>
+            </button>
+
+            <div class="topbar-user">
+              <span>Usuário:</span>
+              <strong>{{ session.get("username") }}</strong>
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="topbar-right">
+          <button class="btn" id="themeBtn" type="button">
+            <i data-lucide="moon"></i>
+            <span style="margin-left:8px;">Tema</span>
+          </button>
+
+          {% if session.get("user_id") %}
+            <a class="btn" href="{{ url_for('auth.logout') }}">Sair</a>
+          {% else %}
+            <a class="btn" href="{{ url_for('auth.login') }}">Login</a>
+          {% endif %}
+        </div>
+      </header>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="alerts">
+            {% for category, message in messages %}
+              <div class="alert {{ category }}">
+                <span class="alert-msg">{{ message }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <section class="content">
+        {% block conteudo %}{% endblock %}
+      </section>
+
+      <footer class="rodape">
+        © 2026 - Sistema de Vendas
+      </footer>
+
+    </main>
+  </div>
+
+  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+  <script>
+    lucide.createIcons();
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

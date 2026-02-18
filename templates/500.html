@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<div class="card" style="max-width:720px; margin: 0 auto; text-align:center;">
+  <h1>Ops… deu um erro 😅</h1>
+  <p style="color: var(--muted);">
+    Algo deu errado no sistema. Tente novamente.
+  </p>
+
+  {% if session.get("user_id") %}
+    <a class="btn" href="/" style="text-decoration:none;">Voltar pro Dashboard</a>
+  {% else %}
+    <a class="btn" href="/login" style="text-decoration:none;">Ir para Login</a>
+  {% endif %}
+</div>
+
+{% endblock %}

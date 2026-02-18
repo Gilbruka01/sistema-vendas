@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<div class="card">
+  <h1>Fazer pedido</h1>
+  <p style="color: var(--muted); margin-top:6px;">
+    Preencha os dados abaixo para registrar seu pedido.
+  </p>
+</div>
+
+<div class="card">
+  <form method="post" style="display:grid; gap:12px; max-width:560px;">
+    <div>
+      <label class="label">Seu nome</label>
+      <input class="input" type="text" name="nome" placeholder="Ex: Maria Silva" required>
+    </div>
+
+    <div>
+      <label class="label">Telefone (opcional)</label>
+      <input class="input" type="text" name="telefone" placeholder="Ex: 62999999999">
+    </div>
+
+    <div>
+      <label class="label">Produto</label>
+      <select class="input" name="produto_id" required>
+        <option value="">Selecione...</option>
+        {% for p in produtos %}
+          <option value="{{ p.id }}">{{ p.nome }} — R$ {{ "%.2f"|format(p.preco) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:160px;">
+        <label class="label">Quantidade</label>
+        <input class="input" type="number" name="quantidade" min="1" value="1" required>
+      </div>
+
+      <div style="flex:1; min-width:190px;">
+        <label class="label">Data da cobrança</label>
+        <input class="input" type="date" name="vencimento" value="{{ venc_padrao }}" required>
+      </div>
+
+      <div style="flex:1; min-width:160px;">
+        <label class="label">Horário da cobrança</label>
+        <input class="input" type="time" name="hora_vencimento" value="09:00" required>
+      </div>
+    </div>
+
+    <button class="btn" type="submit">Enviar pedido</button>
+  </form>
+</div>
+
+{% endblock %}

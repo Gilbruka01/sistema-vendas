@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-start;">
+    <div>
+      <h1>Estoque</h1>
+      <p>Veja e ajuste o estoque por produto (entrada/saída) e defina estoque mínimo.</p>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <a class="btn" href="/produtos" style="text-decoration:none;">Gerenciar produtos</a>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="card" style="flex:1; min-width:300px;">
+    <h3>Ajuste rápido</h3>
+    <p>Adicione ou retire unidades do estoque.</p>
+
+    <form method="POST" style="display:grid; gap:12px; margin-top:10px;">
+      <div>
+        <label>Produto</label>
+        <select name="produto_id" required>
+          <option value="" selected disabled>Selecione…</option>
+          {% for p in itens %}
+            <option value="{{ p[0] }}">{{ p[1] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label>Ação</label>
+        <select name="acao" required>
+          <option value="add">➕ Entrada (somar)</option>
+          <option value="sub">➖ Saída (retirar)</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Quantidade</label>
+        <input name="qtd" type="number" min="1" step="1" value="1" inputmode="numeric" required>
+      </div>
+
+      <div>
+        <label>Estoque mínimo (opcional)</label>
+        <input name="minimo" type="number" min="0" step="1" inputmode="numeric" placeholder="Ex: 5">
+      </div>
+
+      <button class="btn" type="submit">Atualizar estoque</button>
+    </form>
+  </div>
+
+  <div class="card" style="flex:2; min-width:320px; padding:0;">
+    <div class="table-wrap">
+      <table class="table">
+        <tr>
+          <th>Produto</th>
+          <th>Preço</th>
+          <th>Qtd</th>
+          <th>Mínimo</th>
+          <th>Status</th>
+        </tr>
+
+        {% if itens|length == 0 %}
+          <tr>
+            <td colspan="5" style="padding:18px; color:var(--muted); font-weight:800;">
+              Nenhum produto cadastrado ainda.
+            </td>
+          </tr>
+        {% endif %}
+
+        {% for p in itens %}
+        {% set pid = p[0] %}
+        {% set nome = p[1] %}
+        {% set preco = p[2] %}
+        {% set qtd = p[3] or 0 %}
+        {% set min = p[4] or 0 %}
+
+        <tr>
+          <td><strong>{{ nome }}</strong></td>
+          <td>R$ {{ "%.2f"|format(preco) }}</td>
+          <td>{{ qtd }}</td>
+          <td>{{ min }}</td>
+          <td>
+            {% if qtd <= min and min > 0 %}
+              <span class="badge warn">⚠️ Baixo</span>
+            {% else %}
+              <span class="badge success">✅ OK</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

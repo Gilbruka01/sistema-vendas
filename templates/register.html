@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<div class="card" style="max-width:520px; margin:0 auto;">
+  <h1>Criar conta</h1>
+  <p>Crie seu usuário para usar o sistema.</p>
+
+  <form method="POST" style="display:grid; gap:12px; margin-top:12px;">
+    <div>
+      <label>Usuário</label>
+      <input name="username" required minlength="3" autocomplete="username" placeholder="Ex: gilvan">
+    </div>
+
+    <div>
+      <label>Senha</label>
+      <input type="password" name="senha" required minlength="6" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+    </div>
+
+    <div>
+      <label>Confirmar senha</label>
+      <input type="password" name="senha2" required minlength="6" autocomplete="new-password" placeholder="Repita a senha">
+    </div>
+
+    <button class="btn" type="submit">Criar conta</button>
+    <a class="link" href="/login">Já tenho conta</a>
+  </form>
+</div>
+
+{% endblock %}
+

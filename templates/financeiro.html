@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<h1>Financeiro</h1>
+
+<div class="grid">
+  <div class="card">
+    <h3>Total recebido</h3>
+    <div class="value success">R$ {{ "%.2f"|format(total_recebido) }}</div>
+  </div>
+
+  <div class="card">
+    <h3>Pedidos em aberto</h3>
+    <div class="value danger">{{ qtd_abertos }}</div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <h3>Últimos pagamentos</h3>
+
+  <div class="table">
+    <div class="thead">
+      <div>Data</div>
+      <div>Cliente</div>
+      <div>Produto</div>
+      <div>Valor</div>
+    </div>
+
+    {% for p in ultimos %}
+    <div class="trow">
+      <div>{{ (p["data_pagamento"] or "")[:16].replace("T"," ") }}</div>
+      <div>{{ p["cliente"] }}</div>
+      <div>{{ p["produto"] }}</div>
+      <div class="value success">R$ {{ "%.2f"|format(p["valor_pago"] or 0) }}</div>
+    </div>
+    {% else %}
+    <div style="padding:12px; opacity:.8;">Ainda não há pagamentos registrados.</div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}

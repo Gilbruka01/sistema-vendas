@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block conteudo %}
+
+<div class="card">
+  <h1>Editar produto</h1>
+  <p>Atualize o nome e o preço do produto.</p>
+</div>
+
+<div class="card">
+  <form method="POST">
+    <div style="display:grid; gap:12px; max-width:520px;">
+
+      <div>
+        <label>Nome</label>
+        <input name="nome" required value="{{ produto['nome'] }}">
+      </div>
+
+      <div>
+        <label>Preço</label>
+        <input name="preco" required value="{{ "%.2f"|format(produto['preco'] or 0) }}">
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;">
+        <button class="btn primary" type="submit">Salvar</button>
+        <a class="btn" href="/produtos" style="text-decoration:none;">Cancelar</a>
+      </div>
+
+    </div>
+  </form>
+</div>
+
+{% endblock %}
